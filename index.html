@@ -1,824 +1,886 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Opendock Check-in</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Barlow:wght@400;600&display=swap');
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { 
-      font-family: 'Poppins', sans-serif;
-      background-color: #FCFCFC;
-      overflow-x: hidden;
-    }
-    #root {
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-    }
-    input[type="text"],
-    input[type="tel"],
-    textarea {
-      transition: border-color 0.1s ease, border-width 0.1s ease;
-    }
-    input[type="text"]:focus,
-    input[type="tel"]:focus,
-    textarea:focus {
-      border: 2px solid #FF9A1A !important;
-      outline: none;
-    }
-    .custom-dropdown-button {
-      transition: border-color 0.1s ease, border-width 0.1s ease;
-    }
-    .custom-dropdown-button.open {
-      border: 2px solid #FF9A1A !important;
-    }
-    .dropdown-list-item {
-      transition: background-color 0.1s ease;
-    }
-    .dropdown-list-item:hover {
-      background-color: #F5F5F5 !important;
-    }
-    .custom-dropdown input[type="text"]:focus {
-      border: 2px solid #FF9A1A !important;
-    }
-    .clear-button {
-      transition: opacity 0.1s ease;
-    }
-    .clear-button:hover {
-      opacity: 0.7;
-    }
-    .dropdown-scroll::-webkit-scrollbar {
-      width: 6px;
-    }
-    .dropdown-scroll::-webkit-scrollbar-track {
-      background: #EBEBEB;
-      border-radius: 10px;
-    }
-    .dropdown-scroll::-webkit-scrollbar-thumb {
-      background: #DBDBDB;
-      border-radius: 10px;
-    }
-    .dropdown-scroll::-webkit-scrollbar-thumb:hover {
-      background: #BEBEBE;
-    }
-  </style>
-</head>
-<body>
-  <div id="root"></div>
-
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <script type="text/babel">
-    const { useState, useEffect } = React;
-
-    function CheckInApp() {
-      const [currentScreen, setCurrentScreen] = useState('welcome');
-      const [expandedPanel, setExpandedPanel] = useState(null);
-      const [selectedOption, setSelectedOption] = useState('');
-      const [openDropdown, setOpenDropdown] = useState(null);
-      const [carrierSearchTerm, setCarrierSearchTerm] = useState('');
-      const [assets, setAssets] = useState([{ id: 1, assetType: 'Trailer', assetId: '' }]);
-      const [countdown, setCountdown] = useState(20);
-      const [isAnimating, setIsAnimating] = useState(false);
-      const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
-      const [selectedLanguage, setSelectedLanguage] = useState('ENGLISH');
-      const [instructionsExpanded, setInstructionsExpanded] = useState(false);
-      const [formData, setFormData] = useState({
-        referenceNumber: '',
-        carrierCompany: '',
-        phoneNumber: '',
-        customField: '',
-        notes: ''
-      });
-
-      const assetTypes = ['Trailer', 'Container', 'Oversized', 'Other'];
-      const carrierCompanies = [
-        'Nova Carries',
-        'Novacargo',
-        'Nova Logistics',
-        'ABC Transport',
-        'XYZ Shipping',
-        'Global Freight',
-        'Express Carriers',
-        'Swift Logistics'
-      ];
-
-      const handleStartCheckIn = () => {
-        setCurrentScreen('purpose');
-        setIsAnimating(true);
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            setIsAnimating(false);
-          });
-        });
-      };
-
-      const handleBack = () => {
-        if (currentScreen === 'form') {
-          setCurrentScreen('purpose');
-        } else {
-          setCurrentScreen('welcome');
-          setExpandedPanel(null);
-        }
-      };
-
-      const togglePanel = (panel) => {
-        setExpandedPanel(expandedPanel === panel ? null : panel);
-      };
-
-      const handleOptionSelect = (option) => {
-        setSelectedOption(option);
-        setCurrentScreen('form');
-        setIsAnimating(true);
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            setIsAnimating(false);
-          });
-        });
-        setAssets([{ id: 1, assetType: 'Trailer', assetId: '' }]);
-      };
-
-      const handleInputChange = (field, value) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-      };
-
-      const handleAssetChange = (assetId, field, value) => {
-        setAssets(prev => prev.map(asset => 
-          asset.id === assetId ? { ...asset, [field]: value } : asset
-        ));
-      };
-
-      const addAsset = () => {
-        const newAsset = {
-          id: assets.length > 0 ? Math.max(...assets.map(a => a.id)) + 1 : 1,
-          assetType: 'Trailer',
-          assetId: ''
-        };
-        setAssets(prev => [...prev, newAsset]);
-      };
-
-      const removeAsset = (assetId) => {
-        setAssets(prev => prev.filter(asset => asset.id !== assetId));
-      };
-
-      const isFormValid = () => {
-        if (selectedOption !== 'Pickup (Hook)') {
-          const allAssetsValid = assets.every(asset => 
-            asset.assetType && asset.assetId.trim() !== ''
-          );
-          if (!allAssetsValid) return false;
-        }
-        return formData.carrierCompany.trim() !== '' && formData.phoneNumber.trim() !== '';
-      };
-
-      const handleCompleteCheckIn = () => {
-        if (isFormValid()) {
-          setCurrentScreen('success');
-          setCountdown(20);
-          setIsAnimating(true);
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              setIsAnimating(false);
-            });
-          });
-        }
-      };
-
-      const handleFinalize = () => {
-        resetForm();
-      };
-
-      const resetForm = () => {
-        setCurrentScreen('welcome');
-        setSelectedOption('');
-        setExpandedPanel(null);
-        setAssets([{ id: 1, assetType: 'Trailer', assetId: '' }]);
-        setFormData({
-          referenceNumber: '',
-          carrierCompany: '',
-          phoneNumber: '',
-          customField: '',
-          notes: ''
-        });
-        setCarrierSearchTerm('');
-        setCountdown(20);
-        setInstructionsExpanded(false);
-      };
-
-      const selectDropdownItem = (field, value, assetId = null) => {
-        if (assetId !== null) {
-          handleAssetChange(assetId, field, value);
-        } else {
-          handleInputChange(field, value);
-        }
-        setOpenDropdown(null);
-        if (field === 'carrierCompany') {
-          setCarrierSearchTerm('');
-        }
-      };
-
-      const filteredCarrierCompanies = carrierCompanies.filter(company =>
-        company.toLowerCase().includes((carrierSearchTerm || formData.carrierCompany || '').toLowerCase())
-      );
-
-      const handleCarrierInputChange = (value) => {
-        setCarrierSearchTerm(value);
-        handleInputChange('carrierCompany', '');
-        if (!openDropdown) {
-          setOpenDropdown('carrierCompany');
-        }
-      };
-
-      const handleCarrierInputFocus = () => {
-        setOpenDropdown('carrierCompany');
-        if (formData.carrierCompany && !carrierSearchTerm) {
-          setCarrierSearchTerm(formData.carrierCompany);
-        }
-      };
-
-      const toggleDropdown = (dropdown) => {
-        setOpenDropdown(openDropdown === dropdown ? null : dropdown);
-      };
-
-      const toggleLanguageDropdown = () => {
-        setLanguageDropdownOpen(!languageDropdownOpen);
-      };
-
-      const selectLanguage = (language) => {
-        setSelectedLanguage(language);
-        setLanguageDropdownOpen(false);
-      };
-
-      useEffect(() => {
-        const handleClickOutside = (event) => {
-          if (openDropdown && !event.target.closest('.custom-dropdown')) {
-            setOpenDropdown(null);
-            if (openDropdown === 'carrierCompany') {
-              setCarrierSearchTerm('');
-            }
-          }
-          
-          if (languageDropdownOpen && !event.target.closest('.language-selector')) {
-            setLanguageDropdownOpen(false);
-          }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-      }, [openDropdown, languageDropdownOpen]);
-
-      useEffect(() => {
-        let timer;
-        if (currentScreen === 'success' && countdown > 0) {
-          timer = setInterval(() => {
-            setCountdown(prev => {
-              if (prev <= 1) {
-                resetForm();
-                return 20;
-              }
-              return prev - 1;
-            });
-          }, 1000);
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opendock Check-In</title>
+    
+    <!-- React and ReactDOM from CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel Standalone for JSX transformation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
         }
         
-        return () => {
-          if (timer) clearInterval(timer);
-        };
-      }, [currentScreen, countdown]);
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background-color: #FCFCFC;
+            margin: 0;
+        }
+        
+        #root {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        
+        input[type="text"],
+        input[type="tel"],
+        textarea {
+            transition: border-color 0.1s ease, border-width 0.1s ease;
+        }
+        
+        input[type="text"]:focus,
+        input[type="tel"]:focus,
+        textarea:focus {
+            border: 2px solid #FF9A1A !important;
+            outline: none;
+        }
+        
+        .custom-dropdown {
+            position: relative;
+        }
+        
+        .custom-dropdown-button {
+            transition: border-color 0.1s ease, border-width 0.1s ease;
+        }
+        
+        .custom-dropdown-button.open {
+            border: 2px solid #FF9A1A !important;
+        }
+        
+        .dropdown-list-item {
+            transition: background-color 0.1s ease;
+        }
+        
+        .dropdown-list-item:hover {
+            background-color: #F5F5F5 !important;
+        }
+        
+        .custom-dropdown input[type="text"]:focus {
+            border: 2px solid #FF9A1A !important;
+        }
+        
+        .clear-button {
+            transition: opacity 0.1s ease;
+        }
+        
+        .clear-button:hover {
+            opacity: 0.7;
+        }
+        
+        .dropdown-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .dropdown-scroll::-webkit-scrollbar-track {
+            background: #EBEBEB;
+            border-radius: 10px;
+        }
+        
+        .dropdown-scroll::-webkit-scrollbar-thumb {
+            background: #DBDBDB;
+            border-radius: 10px;
+        }
+        
+        .dropdown-scroll::-webkit-scrollbar-thumb:hover {
+            background: #BEBEBE;
+        }
+        
+        .sticky-button {
+            position: sticky !important;
+            bottom: 0 !important;
+            z-index: 1000 !important;
+            margin-top: auto !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-      return (
-        <>
-          {currentScreen === 'welcome' && (
-            <div style={{ backgroundColor: '#FCFCFC', minHeight: '100vh', width: '100%', maxWidth: '412px', margin: '0 auto', padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div style={{ paddingBottom: '24px', display: 'flex', alignItems: 'center' }}>
-                <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '20px', fontWeight: 600, color: '#005A87' }}>Opendock</div>
-              </div>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
-                  <div className="language-selector" style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
-                    <button onClick={toggleLanguageDropdown} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}>
-                      <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: '16px', fontWeight: 600, color: '#005A87', lineHeight: 1.25 }}>{selectedLanguage}</span>
-                      <svg style={{ width: '16px', height: '16px', fill: '#005A87', transform: languageDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.1s ease' }} viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" /></svg>
-                    </button>
-                    {languageDropdownOpen && (
-                      <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, backgroundColor: '#FFFFFF', border: '1px solid #EBEBEB', borderRadius: '4px', boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', zIndex: 1000, overflow: 'hidden', minWidth: '120px' }}>
-                        <button onClick={() => selectLanguage('ENGLISH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>English</button>
-                        <button onClick={() => selectLanguage('SPANISH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>Spanish</button>
-                        <button onClick={() => selectLanguage('FRENCH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>French</button>
-                      </div>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function CheckInApp() {
+            const [currentScreen, setCurrentScreen] = useState('welcome');
+            const [expandedPanel, setExpandedPanel] = useState(null);
+            const [selectedOption, setSelectedOption] = useState('');
+            const [openDropdown, setOpenDropdown] = useState(null);
+            const [carrierSearchTerm, setCarrierSearchTerm] = useState('');
+            const [assets, setAssets] = useState([{ id: 1, assetType: 'Trailer', assetId: '' }]);
+            const [countdown, setCountdown] = useState(20);
+            const [isAnimating, setIsAnimating] = useState(false);
+            const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
+            const [selectedLanguage, setSelectedLanguage] = useState('ENGLISH');
+            const [instructionsExpanded, setInstructionsExpanded] = useState(false);
+            const [formData, setFormData] = useState({
+                referenceNumber: '',
+                carrierCompany: '',
+                phoneNumber: '',
+                customField: '',
+                notes: ''
+            });
+
+            const assetTypes = ['Trailer', 'Container', 'Oversized', 'Other'];
+            const carrierCompanies = [
+                'Nova Carries',
+                'Novacargo',
+                'Nova Logistics',
+                'ABC Transport',
+                'XYZ Shipping',
+                'Global Freight',
+                'Express Carriers',
+                'Swift Logistics'
+            ];
+
+            const handleStartCheckIn = () => {
+                setCurrentScreen('purpose');
+                setIsAnimating(true);
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        setIsAnimating(false);
+                    });
+                });
+            };
+
+            const handleBack = () => {
+                if (currentScreen === 'form') {
+                    setCurrentScreen('purpose');
+                } else {
+                    setCurrentScreen('welcome');
+                    setExpandedPanel(null);
+                }
+            };
+
+            const togglePanel = (panel) => {
+                setExpandedPanel(expandedPanel === panel ? null : panel);
+            };
+
+            const handleOptionSelect = (option) => {
+                setSelectedOption(option);
+                setCurrentScreen('form');
+                setIsAnimating(true);
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        setIsAnimating(false);
+                    });
+                });
+                setAssets([{ id: 1, assetType: 'Trailer', assetId: '' }]);
+            };
+
+            const handleInputChange = (field, value) => {
+                setFormData(prev => ({ ...prev, [field]: value }));
+            };
+
+            const handleAssetChange = (assetId, field, value) => {
+                setAssets(prev => prev.map(asset => 
+                    asset.id === assetId ? { ...asset, [field]: value } : asset
+                ));
+            };
+
+            const addAsset = () => {
+                const newAsset = {
+                    id: assets.length > 0 ? Math.max(...assets.map(a => a.id)) + 1 : 1,
+                    assetType: 'Trailer',
+                    assetId: ''
+                };
+                setAssets(prev => [...prev, newAsset]);
+            };
+
+            const removeAsset = (assetId) => {
+                setAssets(prev => prev.filter(asset => asset.id !== assetId));
+            };
+
+            const isFormValid = () => {
+                if (selectedOption !== 'Pickup (Hook)') {
+                    const allAssetsValid = assets.every(asset => 
+                        asset.assetType && asset.assetId.trim() !== ''
+                    );
+                    if (!allAssetsValid) return false;
+                }
+                
+                return formData.carrierCompany.trim() !== '' && formData.phoneNumber.trim() !== '';
+            };
+
+            const handleCompleteCheckIn = () => {
+                if (isFormValid()) {
+                    setCurrentScreen('success');
+                    setCountdown(20);
+                    setIsAnimating(true);
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            setIsAnimating(false);
+                        });
+                    });
+                }
+            };
+
+            const handleFinalize = () => {
+                resetForm();
+            };
+
+            const resetForm = () => {
+                setCurrentScreen('welcome');
+                setSelectedOption('');
+                setExpandedPanel(null);
+                setAssets([{ id: 1, assetType: 'Trailer', assetId: '' }]);
+                setFormData({
+                    referenceNumber: '',
+                    carrierCompany: '',
+                    phoneNumber: '',
+                    customField: '',
+                    notes: ''
+                });
+                setCarrierSearchTerm('');
+                setCountdown(20);
+                setInstructionsExpanded(false);
+            };
+
+            useEffect(() => {
+                let timer;
+                if (currentScreen === 'success' && countdown > 0) {
+                    timer = setInterval(() => {
+                        setCountdown(prev => {
+                            if (prev <= 1) {
+                                resetForm();
+                                return 20;
+                            }
+                            return prev - 1;
+                        });
+                    }, 1000);
+                }
+                
+                return () => {
+                    if (timer) clearInterval(timer);
+                };
+            }, [currentScreen, countdown]);
+
+            const toggleDropdown = (dropdown) => {
+                setOpenDropdown(openDropdown === dropdown ? null : dropdown);
+            };
+
+            const selectDropdownItem = (field, value, assetId = null) => {
+                if (assetId !== null) {
+                    handleAssetChange(assetId, field, value);
+                } else {
+                    handleInputChange(field, value);
+                }
+                setOpenDropdown(null);
+                if (field === 'carrierCompany') {
+                    setCarrierSearchTerm('');
+                }
+            };
+
+            const filteredCarrierCompanies = carrierCompanies.filter(company =>
+                company.toLowerCase().includes((carrierSearchTerm || formData.carrierCompany || '').toLowerCase())
+            );
+
+            const handleCarrierInputChange = (value) => {
+                setCarrierSearchTerm(value);
+                handleInputChange('carrierCompany', '');
+                if (!openDropdown) {
+                    setOpenDropdown('carrierCompany');
+                }
+            };
+
+            const handleCarrierInputFocus = () => {
+                setOpenDropdown('carrierCompany');
+                if (formData.carrierCompany && !carrierSearchTerm) {
+                    setCarrierSearchTerm(formData.carrierCompany);
+                }
+            };
+
+            const toggleLanguageDropdown = () => {
+                setLanguageDropdownOpen(!languageDropdownOpen);
+            };
+
+            const selectLanguage = (language) => {
+                setSelectedLanguage(language);
+                setLanguageDropdownOpen(false);
+            };
+
+            useEffect(() => {
+                const handleClickOutside = (event) => {
+                    if (openDropdown && !event.target.closest('.custom-dropdown')) {
+                        setOpenDropdown(null);
+                        if (openDropdown === 'carrierCompany') {
+                            setCarrierSearchTerm('');
+                        }
+                    }
+                    
+                    if (languageDropdownOpen && !event.target.closest('.language-selector')) {
+                        setLanguageDropdownOpen(false);
+                    }
+                };
+
+                document.addEventListener('mousedown', handleClickOutside);
+                return () => document.removeEventListener('mousedown', handleClickOutside);
+            }, [openDropdown, languageDropdownOpen]);
+
+            return (
+                <div style={{ position: 'relative', minHeight: '100vh' }}>
+                    {currentScreen === 'welcome' && (
+                        <div style={{ backgroundColor: '#FCFCFC', minHeight: '100vh', width: '100%', maxWidth: '600px', margin: '0 auto', padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            <div style={{ paddingBottom: '24px', display: 'flex', alignItems: 'center' }}>
+                                <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '20px', fontWeight: 600, color: '#005A87' }}>Opendock</div>
+                            </div>
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '24px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
+                                    <div className="language-selector" style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
+                                        <button onClick={toggleLanguageDropdown} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}>
+                                            <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: '16px', fontWeight: 600, color: '#005A87', lineHeight: 1.25 }}>{selectedLanguage}</span>
+                                            <svg style={{ width: '16px', height: '16px', fill: '#005A87', transform: languageDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.1s ease' }} viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" /></svg>
+                                        </button>
+                                        {languageDropdownOpen && (
+                                            <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, backgroundColor: '#FFFFFF', border: '1px solid #EBEBEB', borderRadius: '4px', boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', zIndex: 1000, overflow: 'hidden', minWidth: '120px' }}>
+                                                <button onClick={() => selectLanguage('ENGLISH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>English</button>
+                                                <button onClick={() => selectLanguage('SPANISH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>Spanish</button>
+                                                <button onClick={() => selectLanguage('FRENCH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>French</button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '20px', fontWeight: 400, color: '#3C3C3C', lineHeight: 1.25 }}>Welcome to</div>
+                                    <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '24px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.25 }}>West Chicago Facility</div>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                    <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 400, color: '#3C3C3C', lineHeight: 1.4 }}>Tap below to begin your check-in process.</div>
+                                    <button onClick={handleStartCheckIn} style={{ backgroundColor: '#FF9A1A', border: 'none', borderRadius: '4px', height: '44px', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', width: '100%', boxShadow: '0px 1px 4px 0px rgba(30, 48, 54, 0.24)' }}>
+                                        <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: '14px', fontWeight: 600, color: '#212121', letterSpacing: '0.5px', lineHeight: 1 }}>START CHECK-IN</span>
+                                        <svg style={{ width: '16px', height: '16px', fill: '#212121' }} viewBox="0 0 24 24"><path d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" /></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     )}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '20px', fontWeight: 400, color: '#3C3C3C', lineHeight: 1.25 }}>Welcome to</div>
-                  <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '24px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.25 }}>West Chicago Facility</div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                  <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 400, color: '#3C3C3C', lineHeight: 1.4 }}>Tap below to begin your check-in process.</div>
-                  <button onClick={handleStartCheckIn} style={{ backgroundColor: '#FF9A1A', border: 'none', borderRadius: '4px', height: '44px', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', width: '100%', boxShadow: '0px 1px 4px 0px rgba(30, 48, 54, 0.24)' }}>
-                    <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: '14px', fontWeight: 600, color: '#212121', letterSpacing: '0.5px', lineHeight: 1 }}>START CHECK-IN</span>
-                    <svg style={{ width: '16px', height: '16px', fill: '#212121' }} viewBox="0 0 24 24"><path d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" /></svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {currentScreen === 'purpose' && (
-            <div key="purpose" style={{ backgroundColor: '#FCFCFC', minHeight: '100vh', width: '100%', maxWidth: '412px', margin: '0 auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px', overflow: 'hidden', transform: isAnimating ? 'translateY(5px)' : 'translateY(0)', opacity: isAnimating ? 0 : 1, transition: 'transform 0.4s ease, opacity 0.4s ease' }}>
-              <div style={{ paddingBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '20px', fontWeight: 600, color: '#005A87' }}>Opendock</div>
-                <div className="language-selector" style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
-                  <button onClick={toggleLanguageDropdown} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}>
-                    <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: '16px', fontWeight: 600, color: '#005A87', lineHeight: 1.25 }}>{selectedLanguage}</span>
-                    <svg style={{ width: '16px', height: '16px', fill: '#005A87', transform: languageDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.1s ease' }} viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" /></svg>
-                  </button>
-                  {languageDropdownOpen && (
-                    <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, backgroundColor: '#FFFFFF', border: '1px solid #EBEBEB', borderRadius: '4px', boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', zIndex: 1000, overflow: 'hidden', minWidth: '120px' }}>
-                      <button onClick={() => selectLanguage('ENGLISH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>English</button>
-                      <button onClick={() => selectLanguage('SPANISH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>Spanish</button>
-                      <button onClick={() => selectLanguage('FRENCH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>French</button>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '24px' }}>
-                <button onClick={handleBack} style={{ backgroundColor: 'transparent', border: 'none', height: '44px', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', borderRadius: '4px', width: 'fit-content' }}>
-                  <svg style={{ width: '16px', height: '16px', fill: '#3C3C3C' }} viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
-                  <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: '14px', fontWeight: 600, color: '#3C3C3C', letterSpacing: '0.5px', lineHeight: 1 }}>BACK</span>
-                </button>
-                <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.25 }}>What's the purpose of your stop?</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  
-                  <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #DBDBDB', borderRadius: '4px', overflow: 'hidden' }}>
-                    <button onClick={() => togglePanel('liveLoad')} style={{ width: '100%', backgroundColor: 'transparent', border: 'none', padding: '20px', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer' }}>
-                      <svg style={{ width: '20px', height: '20px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M18 18.5C18.83 18.5 19.5 17.83 19.5 17C19.5 16.17 18.83 15.5 18 15.5C17.17 15.5 16.5 16.17 16.5 17C16.5 17.83 17.17 18.5 18 18.5M19.5 9.5H17V12H21.46L19.5 9.5M6 18.5C6.83 18.5 7.5 17.83 7.5 17C7.5 16.17 6.83 15.5 6 15.5C5.17 15.5 4.5 16.17 4.5 17C4.5 17.83 5.17 18.5 6 18.5M20 8L23 12V17H21C21 18.66 19.66 20 18 20C16.34 20 15 18.66 15 17H9C9 18.66 7.66 20 6 20C4.34 20 3 18.66 3 17H1V6C1 4.89 1.89 4 3 4H17V8H20M3 6V15H3.76C4.31 14.39 5.11 14 6 14C6.89 14 7.69 14.39 8.24 15H15V6H3Z" /></svg>
-                      <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4, flex: 1, textAlign: 'left' }}>Live Load or Unload</span>
-                      <svg style={{ width: '24px', height: '24px', fill: '#3C3C3C', transform: expandedPanel === 'liveLoad' ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.1s ease', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" /></svg>
-                    </button>
-                    
-                    <div style={{ maxHeight: expandedPanel === 'liveLoad' ? '500px' : '0', overflow: 'hidden', transition: 'max-height 0.1s ease, opacity 0.1s ease', opacity: expandedPanel === 'liveLoad' ? 1 : 0 }}>
-                      <div style={{ padding: '0 20px 20px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        
-                        <button onClick={() => handleOptionSelect('Load')} style={{ backgroundColor: '#FCFCFC', border: '1px solid #DBDBDB', borderRadius: '8px', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'stretch', overflow: 'hidden', width: '100%' }}>
-                          <div style={{ padding: '16px', display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
-                            <div style={{ width: '42px', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                              <svg style={{ width: '18px', height: '18px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M14 16.94V12.94H5.08L5.05 10.93H14V6.94L19 11.94Z" /></svg>
-                              <svg style={{ width: '22px', height: '22px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M18 18.5C18.83 18.5 19.5 17.83 19.5 17C19.5 16.17 18.83 15.5 18 15.5C17.17 15.5 16.5 16.17 16.5 17C16.5 17.83 17.17 18.5 18 18.5M19.5 9.5H17V12H21.46L19.5 9.5M6 18.5C6.83 18.5 7.5 17.83 7.5 17C7.5 16.17 6.83 15.5 6 15.5C5.17 15.5 4.5 16.17 4.5 17C4.5 17.83 5.17 18.5 6 18.5M20 8L23 12V17H21C21 18.66 19.66 20 18 20C16.34 20 15 18.66 15 17H9C9 18.66 7.66 20 6 20C4.34 20 3 18.66 3 17H1V6C1 4.89 1.89 4 3 4H17V8H20M3 6V15H3.76C4.31 14.39 5.11 14 6 14C6.89 14 7.69 14.39 8.24 15H15V6H3Z" /></svg>
-                            </div>
-                            <div style={{ flex: 1, textAlign: 'left' }}>
-                              <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4, marginBottom: '2px' }}>Load</div>
-                              <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#656565', lineHeight: 1.4 }}>I'm loading my truck while remaining on site.</div>
-                            </div>
-                          </div>
-                          <div style={{ backgroundColor: '#FFEED9', borderLeft: '1px solid #DBDBDB', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <svg style={{ width: '16px', height: '16px', fill: '#3C3C3C' }} viewBox="0 0 24 24"><path d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" /></svg>
-                          </div>
-                        </button>
-
-                        <button onClick={() => handleOptionSelect('Unload')} style={{ backgroundColor: '#FCFCFC', border: '1px solid #DBDBDB', borderRadius: '8px', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'stretch', overflow: 'hidden', width: '100%' }}>
-                          <div style={{ padding: '16px', display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
-                            <div style={{ width: '42px', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                              <svg style={{ width: '18px', height: '18px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M10.05 16.94V12.94H18.97L19 10.93H10.05V6.94L5.05 11.94Z" /></svg>
-                              <svg style={{ width: '22px', height: '22px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M18 18.5C18.83 18.5 19.5 17.83 19.5 17C19.5 16.17 18.83 15.5 18 15.5C17.17 15.5 16.5 16.17 16.5 17C16.5 17.83 17.17 18.5 18 18.5M19.5 9.5H17V12H21.46L19.5 9.5M6 18.5C6.83 18.5 7.5 17.83 7.5 17C7.5 16.17 6.83 15.5 6 15.5C5.17 15.5 4.5 16.17 4.5 17C4.5 17.83 5.17 18.5 6 18.5M20 8L23 12V17H21C21 18.66 19.66 20 18 20C16.34 20 15 18.66 15 17H9C9 18.66 7.66 20 6 20C4.34 20 3 18.66 3 17H1V6C1 4.89 1.89 4 3 4H17V8H20M3 6V15H3.76C4.31 14.39 5.11 14 6 14C6.89 14 7.69 14.39 8.24 15H15V6H3Z" /></svg>
-                            </div>
-                            <div style={{ flex: 1, textAlign: 'left' }}>
-                              <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4, marginBottom: '2px' }}>Unload</div>
-                              <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#656565', lineHeight: 1.4 }}>I'm unloading my truck while remaining on site.</div>
-                            </div>
-                          </div>
-                          <div style={{ backgroundColor: '#FFEED9', borderLeft: '1px solid #DBDBDB', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <svg style={{ width: '16px', height: '16px', fill: '#3C3C3C' }} viewBox="0 0 24 24"><path d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" /></svg>
-                          </div>
-                        </button>
-
-                        <button onClick={() => handleOptionSelect('Unload & Load')} style={{ backgroundColor: '#FCFCFC', border: '1px solid #DBDBDB', borderRadius: '8px', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'stretch', overflow: 'hidden', width: '100%' }}>
-                          <div style={{ padding: '16px', display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
-                            <div style={{ width: '42px', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                              <svg style={{ width: '18px', height: '18px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M21,9L17,5V8H10V10H17V13M7,11L3,15L7,19V16H14V14H7V11Z" /></svg>
-                              <svg style={{ width: '22px', height: '22px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M18 18.5C18.83 18.5 19.5 17.83 19.5 17C19.5 16.17 18.83 15.5 18 15.5C17.17 15.5 16.5 16.17 16.5 17C16.5 17.83 17.17 18.5 18 18.5M19.5 9.5H17V12H21.46L19.5 9.5M6 18.5C6.83 18.5 7.5 17.83 7.5 17C7.5 16.17 6.83 15.5 6 15.5C5.17 15.5 4.5 16.17 4.5 17C4.5 17.83 5.17 18.5 6 18.5M20 8L23 12V17H21C21 18.66 19.66 20 18 20C16.34 20 15 18.66 15 17H9C9 18.66 7.66 20 6 20C4.34 20 3 18.66 3 17H1V6C1 4.89 1.89 4 3 4H17V8H20M3 6V15H3.76C4.31 14.39 5.11 14 6 14C6.89 14 7.69 14.39 8.24 15H15V6H3Z" /></svg>
-                            </div>
-                            <div style={{ flex: 1, textAlign: 'left' }}>
-                              <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4, marginBottom: '2px' }}>Unload & Load</div>
-                              <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#656565', lineHeight: 1.4 }}>I'm both unloading and loading my truck.</div>
-                            </div>
-                          </div>
-                          <div style={{ backgroundColor: '#FFEED9', borderLeft: '1px solid #DBDBDB', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <svg style={{ width: '16px', height: '16px', fill: '#3C3C3C' }} viewBox="0 0 24 24"><path d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" /></svg>
-                          </div>
-                        </button>
-
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #DBDBDB', borderRadius: '4px', overflow: 'hidden' }}>
-                    <button onClick={() => togglePanel('trailerHook')} style={{ width: '100%', backgroundColor: 'transparent', border: 'none', padding: '20px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-                      <svg style={{ width: '20px', height: '20px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M18,6C18,7.82 16.76,9.41 15,9.86V17A5,5 0 0,1 10,22A5,5 0 0,1 5,17V12L10,17H7A3,3 0 0,0 10,20A3,3 0 0,0 13,17V9.86C11.23,9.4 10,7.8 10,5.97C10,3.76 11.8,2 14,2C16.22,2 18,3.79 18,6M14,8A2,2 0 0,0 16,6A2,2 0 0,0 14,4A2,2 0 0,0 12,6A2,2 0 0,0 14,8Z" /></svg>
-                      <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4, flex: 1, textAlign: 'left' }}>Trailer Hook or Unhook</span>
-                      <svg style={{ width: '24px', height: '24px', fill: '#3C3C3C', transform: expandedPanel === 'trailerHook' ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.1s ease', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" /></svg>
-                    </button>
-                    
-                    <div style={{ maxHeight: expandedPanel === 'trailerHook' ? '500px' : '0', overflow: 'hidden', transition: 'max-height 0.1s ease, opacity 0.1s ease', opacity: expandedPanel === 'trailerHook' ? 1 : 0 }}>
-                      <div style={{ padding: '0 20px 20px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        
-                        <button onClick={() => handleOptionSelect('Drop (Unhook)')} style={{ backgroundColor: '#FCFCFC', border: '1px solid #DBDBDB', borderRadius: '8px', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'stretch', overflow: 'hidden', width: '100%' }}>
-                          <div style={{ padding: '16px', display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
-                            <div style={{ width: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <svg style={{ width: '22px', height: '22px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M18,6C18,7.82 16.76,9.41 15,9.86V17A5,5 0 0,1 10,22A5,5 0 0,1 5,17V12L10,17H7A3,3 0 0,0 10,20A3,3 0 0,0 13,17V9.86C11.23,9.4 10,7.8 10,5.97C10,3.76 11.8,2 14,2C16.22,2 18,3.79 18,6M14,8A2,2 0 0,0 16,6A2,2 0 0,0 14,4A2,2 0 0,0 12,6A2,2 0 0,0 14,8Z" /></svg>
-                            </div>
-                            <div style={{ flex: 1, textAlign: 'left' }}>
-                              <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4, marginBottom: '2px' }}>Drop (Unhook)</div>
-                              <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#656565', lineHeight: 1.4 }}>I'm unhooking my trailer or container.</div>
-                            </div>
-                          </div>
-                          <div style={{ backgroundColor: '#FFEED9', borderLeft: '1px solid #DBDBDB', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <svg style={{ width: '16px', height: '16px', fill: '#3C3C3C' }} viewBox="0 0 24 24"><path d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" /></svg>
-                          </div>
-                        </button>
-
-                        <button onClick={() => handleOptionSelect('Pickup (Hook)')} style={{ backgroundColor: '#FCFCFC', border: '1px solid #DBDBDB', borderRadius: '8px', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'stretch', overflow: 'hidden', width: '100%' }}>
-                          <div style={{ padding: '16px', display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
-                            <div style={{ width: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <svg style={{ width: '22px', height: '22px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M13,9.86V11.18L15,13.18V9.86C17.14,9.31 18.43,7.13 17.87,5C17.32,2.85 15.14,1.56 13,2.11C10.86,2.67 9.57,4.85 10.13,7C10.5,8.4 11.59,9.5 13,9.86M14,4A2,2 0 0,1 16,6A2,2 0 0,1 14,8A2,2 0 0,1 12,6A2,2 0 0,1 14,4M18.73,22L14.86,18.13C14.21,20.81 11.5,22.46 8.83,21.82C6.6,21.28 5,19.29 5,17V12L10,17H7A3,3 0 0,0 10,20A3,3 0 0,0 13,17V16.27L2,5.27L3.28,4L13,13.72L15,15.72L20,20.72L18.73,22Z" /></svg>
-                            </div>
-                            <div style={{ flex: 1, textAlign: 'left' }}>
-                              <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4, marginBottom: '2px' }}>Pickup (Hook)</div>
-                              <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#656565', lineHeight: 1.4 }}>I'm hooking up a trailer or container.</div>
-                            </div>
-                          </div>
-                          <div style={{ backgroundColor: '#FFEED9', borderLeft: '1px solid #DBDBDB', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <svg style={{ width: '16px', height: '16px', fill: '#3C3C3C' }} viewBox="0 0 24 24"><path d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" /></svg>
-                          </div>
-                        </button>
-
-                        <button onClick={() => handleOptionSelect('Drop & Hook')} style={{ backgroundColor: '#FCFCFC', border: '1px solid #DBDBDB', borderRadius: '8px', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'stretch', overflow: 'hidden', width: '100%' }}>
-                          <div style={{ padding: '16px', display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
-                            <div style={{ width: '42px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
-                              <svg style={{ width: '22px', height: '22px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M13,9.86V11.18L15,13.18V9.86C17.14,9.31 18.43,7.13 17.87,5C17.32,2.85 15.14,1.56 13,2.11C10.86,2.67 9.57,4.85 10.13,7C10.5,8.4 11.59,9.5 13,9.86M14,4A2,2 0 0,1 16,6A2,2 0 0,1 14,8A2,2 0 0,1 12,6A2,2 0 0,1 14,4M18.73,22L14.86,18.13C14.21,20.81 11.5,22.46 8.83,21.82C6.6,21.28 5,19.29 5,17V12L10,17H7A3,3 0 0,0 10,20A3,3 0 0,0 13,17V16.27L2,5.27L3.28,4L13,13.72L15,15.72L20,20.72L18.73,22Z" /></svg>
-                              <svg style={{ width: '10px', height: '10px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" /></svg>
-                              <svg style={{ width: '22px', height: '22px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M18,6C18,7.82 16.76,9.41 15,9.86V17A5,5 0 0,1 10,22A5,5 0 0,1 5,17V12L10,17H7A3,3 0 0,0 10,20A3,3 0 0,0 13,17V9.86C11.23,9.4 10,7.8 10,5.97C10,3.76 11.8,2 14,2C16.22,2 18,3.79 18,6M14,8A2,2 0 0,0 16,6A2,2 0 0,0 14,4A2,2 0 0,0 12,6A2,2 0 0,0 14,8Z" /></svg>
-                            </div>
-                            <div style={{ flex: 1, textAlign: 'left' }}>
-                              <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4, marginBottom: '2px' }}>Drop & Hook</div>
-                              <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#656565', lineHeight: 1.4 }}>I'm unhooking my trailer and hooking up to another one.</div>
-                            </div>
-                          </div>
-                          <div style={{ backgroundColor: '#FFEED9', borderLeft: '1px solid #DBDBDB', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <svg style={{ width: '16px', height: '16px', fill: '#3C3C3C' }} viewBox="0 0 24 24"><path d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" /></svg>
-                          </div>
-                        </button>
-
-                      </div>
-                    </div>
-                  </div>
-                  
-                </div>
-              </div>
-            </div>
-          )}
-
-          {currentScreen === 'form' && (
-            <div key="form" style={{ backgroundColor: '#FCFCFC', minHeight: '100vh', width: '100%', maxWidth: '412px', margin: '0 auto', position: 'relative', paddingBottom: '118px', transform: isAnimating ? 'translateY(5px)' : 'translateY(0)', opacity: isAnimating ? 0 : 1, transition: 'transform 0.4s ease, opacity 0.4s ease' }}>
-              <div style={{ padding: '24px', paddingBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '20px', fontWeight: 600, color: '#005A87' }}>Opendock</div>
-                <div className="language-selector" style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
-                  <button onClick={toggleLanguageDropdown} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}>
-                    <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: '16px', fontWeight: 600, color: '#005A87', lineHeight: 1.25 }}>{selectedLanguage}</span>
-                    <svg style={{ width: '16px', height: '16px', fill: '#005A87', transform: languageDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.1s ease' }} viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" /></svg>
-                  </button>
-                  {languageDropdownOpen && (
-                    <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, backgroundColor: '#FFFFFF', border: '1px solid #EBEBEB', borderRadius: '4px', boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', zIndex: 1000, overflow: 'hidden', minWidth: '120px' }}>
-                      <button onClick={() => selectLanguage('ENGLISH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>English</button>
-                      <button onClick={() => selectLanguage('SPANISH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>Spanish</button>
-                      <button onClick={() => selectLanguage('FRENCH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>French</button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <button onClick={handleBack} style={{ backgroundColor: 'transparent', border: 'none', height: '44px', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', borderRadius: '4px', width: 'fit-content' }}>
-                  <svg style={{ width: '16px', height: '16px', fill: '#3C3C3C' }} viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
-                  <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: '14px', fontWeight: 600, color: '#3C3C3C', letterSpacing: '0.5px', lineHeight: 1 }}>BACK</span>
-                </button>
-
-                <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EBEBEB', borderRadius: '4px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', color: '#3C3C3C', lineHeight: 1.4, textAlign: 'center' }}>
-                    <span style={{ fontWeight: 400 }}>You selected: </span>
-                    <span style={{ fontWeight: 600 }}>{selectedOption}</span>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.25 }}>Appointment Information</div>
-                </div>
-
-                <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EBEBEB', borderRadius: '4px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4 }}>Reference Number or Confirmation Number</label>
-                    <input
-                      type="text"
-                      value={formData.referenceNumber}
-                      onChange={(e) => handleInputChange('referenceNumber', e.target.value)}
-                      style={{ backgroundColor: '#FFFFFF', border: '1px solid #9E9E9E', borderRadius: '4px', padding: '14px 12px', fontFamily: 'Barlow, sans-serif', fontSize: '16px', color: '#212121', lineHeight: 1.4, outline: 'none' }}
-                    />
-                  </div>
-                </div>
-
-                {selectedOption !== 'Pickup (Hook)' && (
-                  <>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.25 }}>Asset Details</div>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      {assets.map((asset, index) => (
-                        <div key={asset.id} style={{ backgroundColor: '#FFFFFF', border: '1px solid #EBEBEB', borderRadius: '4px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <label style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4 }}>
-                              Asset Type<span style={{ color: '#D40047' }}>*</span>
-                            </label>
-                            <div className="custom-dropdown">
-                              <button
-                                type="button"
-                                onClick={() => toggleDropdown(`assetType-${asset.id}`)}
-                                className={`custom-dropdown-button ${openDropdown === `assetType-${asset.id}` ? 'open' : ''}`}
-                                style={{ backgroundColor: '#FFFFFF', border: '1px solid #9E9E9E', borderRadius: '4px', padding: '14px 12px', fontFamily: 'Barlow, sans-serif', fontSize: '16px', color: '#212121', lineHeight: 1.4, outline: 'none', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', textAlign: 'left' }}
-                              >
-                                <span>{asset.assetType}</span>
-                                <svg style={{ width: '20px', height: '20px', fill: '#3C3C3C', transform: openDropdown === `assetType-${asset.id}` ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.1s ease' }} viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" /></svg>
-                              </button>
-                              {openDropdown === `assetType-${asset.id}` && (
-                                <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, backgroundColor: '#FFFFFF', border: '1px solid #EBEBEB', borderRadius: '4px', boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', zIndex: 1000, overflow: 'hidden', padding: '8px 0' }}>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    {assetTypes.map((type) => (
-                                      <button
-                                        key={type}
-                                        type="button"
-                                        onClick={() => selectDropdownItem('assetType', type, asset.id)}
-                                        className="dropdown-list-item"
-                                        style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}
-                                      >
-                                        {type}
-                                      </button>
-                                    ))}
-                                  </div>
+                    {currentScreen === 'purpose' && (
+                        <div style={{ backgroundColor: '#FCFCFC', minHeight: '100vh', width: '100%', maxWidth: '600px', margin: '0 auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px', overflow: 'hidden', transform: isAnimating ? 'translateY(5px)' : 'translateY(0)', opacity: isAnimating ? 0 : 1, transition: 'transform 0.4s ease, opacity 0.4s ease' }}>
+                            <div style={{ paddingBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '20px', fontWeight: 600, color: '#005A87' }}>Opendock</div>
+                                <div className="language-selector" style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
+                                    <button onClick={toggleLanguageDropdown} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}>
+                                        <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: '16px', fontWeight: 600, color: '#005A87', lineHeight: 1.25 }}>{selectedLanguage}</span>
+                                        <svg style={{ width: '16px', height: '16px', fill: '#005A87', transform: languageDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.1s ease' }} viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" /></svg>
+                                    </button>
+                                    {languageDropdownOpen && (
+                                        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, backgroundColor: '#FFFFFF', border: '1px solid #EBEBEB', borderRadius: '4px', boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', zIndex: 1000, overflow: 'hidden', minWidth: '120px' }}>
+                                            <button onClick={() => selectLanguage('ENGLISH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>English</button>
+                                            <button onClick={() => selectLanguage('SPANISH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>Spanish</button>
+                                            <button onClick={() => selectLanguage('FRENCH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>French</button>
+                                        </div>
+                                    )}
                                 </div>
-                              )}
                             </div>
-                          </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '24px' }}>
+                                <button onClick={handleBack} style={{ backgroundColor: 'transparent', border: 'none', height: '44px', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', borderRadius: '4px', width: 'fit-content' }}>
+                                    <svg style={{ width: '16px', height: '16px', fill: '#3C3C3C' }} viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
+                                    <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: '14px', fontWeight: 600, color: '#3C3C3C', letterSpacing: '0.5px', lineHeight: 1 }}>BACK</span>
+                                </button>
+                                <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.25 }}>What's the purpose of your stop?</div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    
+                                    {/* Live Load or Unload Panel */}
+                                    <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #DBDBDB', borderRadius: '4px', overflow: 'hidden' }}>
+                                        <button onClick={() => togglePanel('liveLoad')} style={{ width: '100%', backgroundColor: 'transparent', border: 'none', padding: '20px', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer' }}>
+                                            <svg style={{ width: '20px', height: '20px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M18 18.5C18.83 18.5 19.5 17.83 19.5 17C19.5 16.17 18.83 15.5 18 15.5C17.17 15.5 16.5 16.17 16.5 17C16.5 17.83 17.17 18.5 18 18.5M19.5 9.5H17V12H21.46L19.5 9.5M6 18.5C6.83 18.5 7.5 17.83 7.5 17C7.5 16.17 6.83 15.5 6 15.5C5.17 15.5 4.5 16.17 4.5 17C4.5 17.83 5.17 18.5 6 18.5M20 8L23 12V17H21C21 18.66 19.66 20 18 20C16.34 20 15 18.66 15 17H9C9 18.66 7.66 20 6 20C4.34 20 3 18.66 3 17H1V6C1 4.89 1.89 4 3 4H17V8H20M3 6V15H3.76C4.31 14.39 5.11 14 6 14C6.89 14 7.69 14.39 8.24 15H15V6H3Z" /></svg>
+                                            <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4, flex: 1, textAlign: 'left' }}>Live Load or Unload</span>
+                                            <svg style={{ width: '24px', height: '24px', fill: '#3C3C3C', transform: expandedPanel === 'liveLoad' ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" /></svg>
+                                        </button>
+                                        
+                                        <div style={{ maxHeight: expandedPanel === 'liveLoad' ? '500px' : '0', overflow: 'hidden', transition: 'max-height 0.4s ease, opacity 0.4s ease', opacity: expandedPanel === 'liveLoad' ? 1 : 0 }}>
+                                            <div style={{ padding: '0 20px 20px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                
+                                                {/* Load */}
+                                                <button onClick={() => handleOptionSelect('Load')} style={{ backgroundColor: '#FCFCFC', border: '1px solid #DBDBDB', borderRadius: '8px', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'stretch', overflow: 'hidden', width: '100%' }}>
+                                                    <div style={{ padding: '16px', display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
+                                                        <div style={{ width: '42px', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                                            <svg style={{ width: '18px', height: '18px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M14 16.94V12.94H5.08L5.05 10.93H14V6.94L19 11.94Z" /></svg>
+                                                            <svg style={{ width: '22px', height: '22px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M18 18.5C18.83 18.5 19.5 17.83 19.5 17C19.5 16.17 18.83 15.5 18 15.5C17.17 15.5 16.5 16.17 16.5 17C16.5 17.83 17.17 18.5 18 18.5M19.5 9.5H17V12H21.46L19.5 9.5M6 18.5C6.83 18.5 7.5 17.83 7.5 17C7.5 16.17 6.83 15.5 6 15.5C5.17 15.5 4.5 16.17 4.5 17C4.5 17.83 5.17 18.5 6 18.5M20 8L23 12V17H21C21 18.66 19.66 20 18 20C16.34 20 15 18.66 15 17H9C9 18.66 7.66 20 6 20C4.34 20 3 18.66 3 17H1V6C1 4.89 1.89 4 3 4H17V8H20M3 6V15H3.76C4.31 14.39 5.11 14 6 14C6.89 14 7.69 14.39 8.24 15H15V6H3Z" /></svg>
+                                                        </div>
+                                                        <div style={{ flex: 1, textAlign: 'left' }}>
+                                                            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4, marginBottom: '2px' }}>Load</div>
+                                                            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#656565', lineHeight: 1.4 }}>I'm loading my truck while remaining on site.</div>
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ backgroundColor: '#FFEED9', borderLeft: '1px solid #DBDBDB', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        <svg style={{ width: '16px', height: '16px', fill: '#3C3C3C' }} viewBox="0 0 24 24"><path d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" /></svg>
+                                                    </div>
+                                                </button>
 
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <label style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4 }}>
-                              Asset ID<span style={{ color: '#D40047' }}>*</span>
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="E.g.: Trailer Number, Container ID,..."
-                              value={asset.assetId}
-                              onChange={(e) => handleAssetChange(asset.id, 'assetId', e.target.value)}
-                              style={{ backgroundColor: '#FFFFFF', border: '1px solid #9E9E9E', borderRadius: '4px', padding: '14px 12px', fontFamily: 'Barlow, sans-serif', fontSize: '16px', color: '#212121', lineHeight: 1.4, outline: 'none' }}
-                            />
-                          </div>
+                                                {/* Unload */}
+                                                <button onClick={() => handleOptionSelect('Unload')} style={{ backgroundColor: '#FCFCFC', border: '1px solid #DBDBDB', borderRadius: '8px', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'stretch', overflow: 'hidden', width: '100%' }}>
+                                                    <div style={{ padding: '16px', display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
+                                                        <div style={{ width: '42px', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                                            <svg style={{ width: '18px', height: '18px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M10.05 16.94V12.94H18.97L19 10.93H10.05V6.94L5.05 11.94Z" /></svg>
+                                                            <svg style={{ width: '22px', height: '22px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M18 18.5C18.83 18.5 19.5 17.83 19.5 17C19.5 16.17 18.83 15.5 18 15.5C17.17 15.5 16.5 16.17 16.5 17C16.5 17.83 17.17 18.5 18 18.5M19.5 9.5H17V12H21.46L19.5 9.5M6 18.5C6.83 18.5 7.5 17.83 7.5 17C7.5 16.17 6.83 15.5 6 15.5C5.17 15.5 4.5 16.17 4.5 17C4.5 17.83 5.17 18.5 6 18.5M20 8L23 12V17H21C21 18.66 19.66 20 18 20C16.34 20 15 18.66 15 17H9C9 18.66 7.66 20 6 20C4.34 20 3 18.66 3 17H1V6C1 4.89 1.89 4 3 4H17V8H20M3 6V15H3.76C4.31 14.39 5.11 14 6 14C6.89 14 7.69 14.39 8.24 15H15V6H3Z" /></svg>
+                                                        </div>
+                                                        <div style={{ flex: 1, textAlign: 'left' }}>
+                                                            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4, marginBottom: '2px' }}>Unload</div>
+                                                            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#656565', lineHeight: 1.4 }}>I'm unloading my truck while remaining on site.</div>
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ backgroundColor: '#FFEED9', borderLeft: '1px solid #DBDBDB', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        <svg style={{ width: '16px', height: '16px', fill: '#3C3C3C' }} viewBox="0 0 24 24"><path d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" /></svg>
+                                                    </div>
+                                                </button>
 
-                          {index > 0 && (
-                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                              <button
-                                onClick={() => removeAsset(asset.id)}
-                                style={{ backgroundColor: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 0', fontFamily: 'Poppins, sans-serif', fontSize: '12px', fontWeight: 600, color: '#D40047', lineHeight: 1.4 }}
-                              >
-                                REMOVE
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                                                {/* Unload & Load */}
+                                                <button onClick={() => handleOptionSelect('Unload & Load')} style={{ backgroundColor: '#FCFCFC', border: '1px solid #DBDBDB', borderRadius: '8px', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'stretch', overflow: 'hidden', width: '100%' }}>
+                                                    <div style={{ padding: '16px', display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
+                                                        <div style={{ width: '42px', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                                            <svg style={{ width: '18px', height: '18px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M21,9L17,5V8H10V10H17V13M7,11L3,15L7,19V16H14V14H7V11Z" /></svg>
+                                                            <svg style={{ width: '22px', height: '22px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M18 18.5C18.83 18.5 19.5 17.83 19.5 17C19.5 16.17 18.83 15.5 18 15.5C17.17 15.5 16.5 16.17 16.5 17C16.5 17.83 17.17 18.5 18 18.5M19.5 9.5H17V12H21.46L19.5 9.5M6 18.5C6.83 18.5 7.5 17.83 7.5 17C7.5 16.17 6.83 15.5 6 15.5C5.17 15.5 4.5 16.17 4.5 17C4.5 17.83 5.17 18.5 6 18.5M20 8L23 12V17H21C21 18.66 19.66 20 18 20C16.34 20 15 18.66 15 17H9C9 18.66 7.66 20 6 20C4.34 20 3 18.66 3 17H1V6C1 4.89 1.89 4 3 4H17V8H20M3 6V15H3.76C4.31 14.39 5.11 14 6 14C6.89 14 7.69 14.39 8.24 15H15V6H3Z" /></svg>
+                                                        </div>
+                                                        <div style={{ flex: 1, textAlign: 'left' }}>
+                                                            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4, marginBottom: '2px' }}>Unload & Load</div>
+                                                            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#656565', lineHeight: 1.4 }}>I'm both unloading and loading my truck.</div>
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ backgroundColor: '#FFEED9', borderLeft: '1px solid #DBDBDB', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        <svg style={{ width: '16px', height: '16px', fill: '#3C3C3C' }} viewBox="0 0 24 24"><path d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" /></svg>
+                                                    </div>
+                                                </button>
 
-                      {assets.length < 3 && (
-                        <button onClick={addAsset} style={{ backgroundColor: 'transparent', border: 'none', height: '36px', padding: '0 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', borderRadius: '4px' }}>
-                          <svg style={{ width: '16px', height: '16px', fill: '#3C3C3C' }} viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" /></svg>
-                          <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: '12px', fontWeight: 600, color: '#3C3C3C', letterSpacing: '0.5px', lineHeight: 1 }}>ANOTHER ASSET</span>
-                        </button>
-                      )}
-                    </div>
-                  </>
-                )}
+                                            </div>
+                                        </div>
+                                    </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.25 }}>Check-in Details</div>
-                </div>
+                                    {/* Trailer Hook or Unhook Panel */}
+                                    <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #DBDBDB', borderRadius: '4px', overflow: 'hidden' }}>
+                                        <button onClick={() => togglePanel('trailerHook')} style={{ width: '100%', backgroundColor: 'transparent', border: 'none', padding: '20px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+                                            <svg style={{ width: '20px', height: '20px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M18,6C18,7.82 16.76,9.41 15,9.86V17A5,5 0 0,1 10,22A5,5 0 0,1 5,17V12L10,17H7A3,3 0 0,0 10,20A3,3 0 0,0 13,17V9.86C11.23,9.4 10,7.8 10,5.97C10,3.76 11.8,2 14,2C16.22,2 18,3.79 18,6M14,8A2,2 0 0,0 16,6A2,2 0 0,0 14,4A2,2 0 0,0 12,6A2,2 0 0,0 14,8Z" /></svg>
+                                            <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4, flex: 1, textAlign: 'left' }}>Trailer Hook or Unhook</span>
+                                            <svg style={{ width: '24px', height: '24px', fill: '#3C3C3C', transform: expandedPanel === 'trailerHook' ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" /></svg>
+                                        </button>
+                                        
+                                        <div style={{ maxHeight: expandedPanel === 'trailerHook' ? '500px' : '0', overflow: 'hidden', transition: 'max-height 0.4s ease, opacity 0.4s ease', opacity: expandedPanel === 'trailerHook' ? 1 : 0 }}>
+                                            <div style={{ padding: '0 20px 20px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                
+                                                {/* Drop (Unhook) */}
+                                                <button onClick={() => handleOptionSelect('Drop (Unhook)')} style={{ backgroundColor: '#FCFCFC', border: '1px solid #DBDBDB', borderRadius: '8px', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'stretch', overflow: 'hidden', width: '100%' }}>
+                                                    <div style={{ padding: '16px', display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
+                                                        <div style={{ width: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                            <svg style={{ width: '22px', height: '22px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M18,6C18,7.82 16.76,9.41 15,9.86V17A5,5 0 0,1 10,22A5,5 0 0,1 5,17V12L10,17H7A3,3 0 0,0 10,20A3,3 0 0,0 13,17V9.86C11.23,9.4 10,7.8 10,5.97C10,3.76 11.8,2 14,2C16.22,2 18,3.79 18,6M14,8A2,2 0 0,0 16,6A2,2 0 0,0 14,4A2,2 0 0,0 12,6A2,2 0 0,0 14,8Z" /></svg>
+                                                        </div>
+                                                        <div style={{ flex: 1, textAlign: 'left' }}>
+                                                            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4, marginBottom: '2px' }}>Drop (Unhook)</div>
+                                                            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#656565', lineHeight: 1.4 }}>I'm unhooking my trailer or container.</div>
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ backgroundColor: '#FFEED9', borderLeft: '1px solid #DBDBDB', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        <svg style={{ width: '16px', height: '16px', fill: '#3C3C3C' }} viewBox="0 0 24 24"><path d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" /></svg>
+                                                    </div>
+                                                </button>
 
-                <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EBEBEB', borderRadius: '4px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4 }}>
-                      Carrier Company<span style={{ color: '#D40047' }}>*</span>
-                    </label>
-                    <div className="custom-dropdown" style={{ position: 'relative' }}>
-                      <div style={{ position: 'relative' }}>
-                        <input
-                          type="text"
-                          value={carrierSearchTerm || formData.carrierCompany || ''}
-                          onChange={(e) => handleCarrierInputChange(e.target.value)}
-                          onFocus={handleCarrierInputFocus}
-                          placeholder="Search or select carrier company"
-                          style={{ backgroundColor: '#FFFFFF', border: openDropdown === 'carrierCompany' ? '2px solid #FF9A1A' : '1px solid #9E9E9E', borderRadius: '4px', padding: '14px 80px 14px 12px', fontFamily: 'Barlow, sans-serif', fontSize: '16px', color: '#212121', lineHeight: 1.4, outline: 'none', cursor: 'text', width: '100%', transition: 'border-color 0.1s ease, border-width 0.1s ease' }}
-                        />
-                        <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          {(carrierSearchTerm || formData.carrierCompany) && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                handleInputChange('carrierCompany', '');
-                                setCarrierSearchTerm('');
-                                setOpenDropdown(null);
-                              }}
-                              className="clear-button"
-                              style={{ backgroundColor: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                            >
-                              <svg style={{ width: '20px', height: '20px', fill: '#656565' }} viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" /></svg>
-                            </button>
-                          )}
-                          <div style={{ pointerEvents: 'none' }}>
-                            <svg style={{ width: '20px', height: '20px', fill: '#3C3C3C', transform: openDropdown === 'carrierCompany' ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.1s ease' }} viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" /></svg>
-                          </div>
-                        </div>
-                      </div>
-                      {openDropdown === 'carrierCompany' && (
-                        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, backgroundColor: '#FFFFFF', border: '1px solid #EBEBEB', borderRadius: '4px', boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', zIndex: 1000, overflow: 'hidden', maxHeight: '280px', display: 'flex', flexDirection: 'column' }}>
-                          {filteredCarrierCompanies.length > 0 && (
-                            <div className="dropdown-scroll" style={{ overflowY: 'auto', padding: '8px 0', flex: 1 }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                {filteredCarrierCompanies.map((company) => (
-                                  <button
-                                    key={company}
-                                    type="button"
-                                    onClick={() => selectDropdownItem('carrierCompany', company)}
-                                    className="dropdown-list-item"
-                                    style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}
-                                  >
-                                    {company}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {(carrierSearchTerm || formData.carrierCompany) && (
-                            <div style={{ borderTop: filteredCarrierCompanies.length > 0 ? '1px solid #EBEBEB' : 'none', padding: filteredCarrierCompanies.length > 0 ? '8px 0 0 0' : '0' }}>
-                              <button
-                                type="button"
-                                onClick={() => selectDropdownItem('carrierCompany', carrierSearchTerm || formData.carrierCompany)}
-                                className="dropdown-list-item"
-                                style={{ width: '100%', padding: '16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer' }}
-                              >
-                                <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', color: '#212121', lineHeight: 1.4 }}>
-                                  Select <span style={{ fontWeight: 600 }}>"{carrierSearchTerm || formData.carrierCompany}"</span> as carrier
+                                                {/* Pickup (Hook) */}
+                                                <button onClick={() => handleOptionSelect('Pickup (Hook)')} style={{ backgroundColor: '#FCFCFC', border: '1px solid #DBDBDB', borderRadius: '8px', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'stretch', overflow: 'hidden', width: '100%' }}>
+                                                    <div style={{ padding: '16px', display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
+                                                        <div style={{ width: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                            <svg style={{ width: '22px', height: '22px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M13,9.86V11.18L15,13.18V9.86C17.14,9.31 18.43,7.13 17.87,5C17.32,2.85 15.14,1.56 13,2.11C10.86,2.67 9.57,4.85 10.13,7C10.5,8.4 11.59,9.5 13,9.86M14,4A2,2 0 0,1 16,6A2,2 0 0,1 14,8A2,2 0 0,1 12,6A2,2 0 0,1 14,4M18.73,22L14.86,18.13C14.21,20.81 11.5,22.46 8.83,21.82C6.6,21.28 5,19.29 5,17V12L10,17H7A3,3 0 0,0 10,20A3,3 0 0,0 13,17V16.27L2,5.27L3.28,4L13,13.72L15,15.72L20,20.72L18.73,22Z" /></svg>
+                                                        </div>
+                                                        <div style={{ flex: 1, textAlign: 'left' }}>
+                                                            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4, marginBottom: '2px' }}>Pickup (Hook)</div>
+                                                            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#656565', lineHeight: 1.4 }}>I'm hooking up a trailer or container.</div>
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ backgroundColor: '#FFEED9', borderLeft: '1px solid #DBDBDB', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        <svg style={{ width: '16px', height: '16px', fill: '#3C3C3C' }} viewBox="0 0 24 24"><path d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" /></svg>
+                                                    </div>
+                                                </button>
+
+                                                {/* Drop & Hook */}
+                                                <button onClick={() => handleOptionSelect('Drop & Hook')} style={{ backgroundColor: '#FCFCFC', border: '1px solid #DBDBDB', borderRadius: '8px', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'stretch', overflow: 'hidden', width: '100%' }}>
+                                                    <div style={{ padding: '16px', display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
+                                                        <div style={{ width: '42px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
+                                                            <svg style={{ width: '22px', height: '22px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M13,9.86V11.18L15,13.18V9.86C17.14,9.31 18.43,7.13 17.87,5C17.32,2.85 15.14,1.56 13,2.11C10.86,2.67 9.57,4.85 10.13,7C10.5,8.4 11.59,9.5 13,9.86M14,4A2,2 0 0,1 16,6A2,2 0 0,1 14,8A2,2 0 0,1 12,6A2,2 0 0,1 14,4M18.73,22L14.86,18.13C14.21,20.81 11.5,22.46 8.83,21.82C6.6,21.28 5,19.29 5,17V12L10,17H7A3,3 0 0,0 10,20A3,3 0 0,0 13,17V16.27L2,5.27L3.28,4L13,13.72L15,15.72L20,20.72L18.73,22Z" /></svg>
+                                                            <svg style={{ width: '10px', height: '10px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" /></svg>
+                                                            <svg style={{ width: '22px', height: '22px', fill: '#3C3C3C', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M18,6C18,7.82 16.76,9.41 15,9.86V17A5,5 0 0,1 10,22A5,5 0 0,1 5,17V12L10,17H7A3,3 0 0,0 10,20A3,3 0 0,0 13,17V9.86C11.23,9.4 10,7.8 10,5.97C10,3.76 11.8,2 14,2C16.22,2 18,3.79 18,6M14,8A2,2 0 0,0 16,6A2,2 0 0,0 14,4A2,2 0 0,0 12,6A2,2 0 0,0 14,8Z" /></svg>
+                                                        </div>
+                                                        <div style={{ flex: 1, textAlign: 'left' }}>
+                                                            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4, marginBottom: '2px' }}>Drop & Hook</div>
+                                                            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#656565', lineHeight: 1.4 }}>I'm unhooking my trailer and hooking up to another one.</div>
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ backgroundColor: '#FFEED9', borderLeft: '1px solid #DBDBDB', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        <svg style={{ width: '16px', height: '16px', fill: '#3C3C3C' }} viewBox="0 0 24 24"><path d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" /></svg>
+                                                    </div>
+                                                </button>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
                                 </div>
-                              </button>
                             </div>
-                          )}
                         </div>
-                      )}
-                    </div>
-                  </div>
+                    )}
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4 }}>
-                      Driver's Phone Number<span style={{ color: '#D40047' }}>*</span>
-                    </label>
-                    <input
-                      type="tel"
-                      value={formData.phoneNumber}
-                      onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                      style={{ backgroundColor: '#FFFFFF', border: '1px solid #9E9E9E', borderRadius: '4px', padding: '14px 12px', fontFamily: 'Barlow, sans-serif', fontSize: '16px', color: '#212121', lineHeight: 1.4, outline: 'none' }}
-                    />
-                  </div>
+                    {currentScreen === 'form' && (
+                        <div style={{ backgroundColor: '#FCFCFC', minHeight: '100vh', width: '100%', maxWidth: '600px', margin: '0 auto', display: 'flex', flexDirection: 'column', transform: isAnimating ? 'translateY(5px)' : 'translateY(0)', opacity: isAnimating ? 0 : 1, transition: 'transform 0.4s ease, opacity 0.4s ease' }}>
+                            {/* Header */}
+                            <div style={{ padding: '24px', paddingBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '20px', fontWeight: 600, color: '#005A87' }}>Opendock</div>
+                                <div className="language-selector" style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
+                                    <button onClick={toggleLanguageDropdown} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}>
+                                        <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: '16px', fontWeight: 600, color: '#005A87', lineHeight: 1.25 }}>{selectedLanguage}</span>
+                                        <svg style={{ width: '16px', height: '16px', fill: '#005A87', transform: languageDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.1s ease' }} viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" /></svg>
+                                    </button>
+                                    {languageDropdownOpen && (
+                                        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, backgroundColor: '#FFFFFF', border: '1px solid #EBEBEB', borderRadius: '4px', boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', zIndex: 1000, overflow: 'hidden', minWidth: '120px' }}>
+                                            <button onClick={() => selectLanguage('ENGLISH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>English</button>
+                                            <button onClick={() => selectLanguage('SPANISH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>Spanish</button>
+                                            <button onClick={() => selectLanguage('FRENCH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>French</button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4 }}>Check-in Custom Field</label>
-                    <input
-                      type="text"
-                      value={formData.customField}
-                      onChange={(e) => handleInputChange('customField', e.target.value)}
-                      style={{ backgroundColor: '#FFFFFF', border: '1px solid #9E9E9E', borderRadius: '4px', padding: '14px 12px', fontFamily: 'Barlow, sans-serif', fontSize: '16px', color: '#212121', lineHeight: 1.4, outline: 'none' }}
-                    />
-                  </div>
+                            {/* Scrollable Content */}
+                            <div style={{ flex: 1, padding: '0 24px', display: 'flex', flexDirection: 'column', gap: '24px', overflowY: 'auto' }}>
+                                {/* Back Button */}
+                                <button onClick={handleBack} style={{ backgroundColor: 'transparent', border: 'none', height: '44px', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', borderRadius: '4px', width: 'fit-content' }}>
+                                    <svg style={{ width: '16px', height: '16px', fill: '#3C3C3C' }} viewBox="0 0 24 24"><path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" /></svg>
+                                    <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: '14px', fontWeight: 600, color: '#3C3C3C', letterSpacing: '0.5px', lineHeight: 1 }}>BACK</span>
+                                </button>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4 }}>Notes</label>
-                    <textarea
-                      placeholder="Any special instructions or notes to the facility?"
-                      value={formData.notes}
-                      onChange={(e) => handleInputChange('notes', e.target.value)}
-                      style={{ backgroundColor: '#FFFFFF', border: '1px solid #9E9E9E', borderRadius: '4px', padding: '12px', fontFamily: 'Barlow, sans-serif', fontSize: '16px', color: '#212121', lineHeight: 1.4, outline: 'none', minHeight: '120px', resize: 'none' }}
-                    />
-                  </div>
+                                {/* Selected Option Confirmation */}
+                                <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EBEBEB', borderRadius: '4px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', color: '#3C3C3C', lineHeight: 1.4, textAlign: 'center' }}>
+                                        <span style={{ fontWeight: 400 }}>You selected: </span>
+                                        <span style={{ fontWeight: 600 }}>{selectedOption}</span>
+                                    </div>
+                                </div>
+
+                                {/* Appointment Information */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.25 }}>Appointment Information</div>
+                                </div>
+
+                                <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EBEBEB', borderRadius: '4px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        <label style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4 }}>Reference Number or Confirmation Number</label>
+                                        <input
+                                            type="text"
+                                            value={formData.referenceNumber}
+                                            onChange={(e) => handleInputChange('referenceNumber', e.target.value)}
+                                            style={{ backgroundColor: '#FFFFFF', border: '1px solid #9E9E9E', borderRadius: '4px', padding: '14px 12px', fontFamily: 'Barlow, sans-serif', fontSize: '16px', color: '#212121', lineHeight: 1.4, outline: 'none' }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Asset Details - Hidden for Pickup (Hook) */}
+                                {selectedOption !== 'Pickup (Hook)' && (
+                                    <>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                            <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.25 }}>Asset Details</div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                            {assets.map((asset, index) => (
+                                                <div key={asset.id} style={{ backgroundColor: '#FFFFFF', border: '1px solid #EBEBEB', borderRadius: '4px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative' }}>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                        <label style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4 }}>
+                                                            Asset Type<span style={{ color: '#D40047' }}>*</span>
+                                                        </label>
+                                                        <div className="custom-dropdown">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => toggleDropdown(`assetType-${asset.id}`)}
+                                                                className={`custom-dropdown-button ${openDropdown === `assetType-${asset.id}` ? 'open' : ''}`}
+                                                                style={{ backgroundColor: '#FFFFFF', border: '1px solid #9E9E9E', borderRadius: '4px', padding: '14px 12px', fontFamily: 'Barlow, sans-serif', fontSize: '16px', color: '#212121', lineHeight: 1.4, outline: 'none', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', textAlign: 'left' }}
+                                                            >
+                                                                <span>{asset.assetType}</span>
+                                                                <svg style={{ width: '20px', height: '20px', fill: '#3C3C3C', transform: openDropdown === `assetType-${asset.id}` ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.1s ease' }} viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" /></svg>
+                                                            </button>
+                                                            {openDropdown === `assetType-${asset.id}` && (
+                                                                <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, backgroundColor: '#FFFFFF', border: '1px solid #EBEBEB', borderRadius: '4px', boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', zIndex: 1000, overflow: 'hidden', padding: '8px 0' }}>
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                                        {assetTypes.map((type) => (
+                                                                            <button
+                                                                                key={type}
+                                                                                type="button"
+                                                                                onClick={() => selectDropdownItem('assetType', type, asset.id)}
+                                                                                className="dropdown-list-item"
+                                                                                style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}
+                                                                            >
+                                                                                {type}
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                        <label style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4 }}>
+                                                            Asset ID<span style={{ color: '#D40047' }}>*</span>
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="E.g.: Trailer Number, Container ID,..."
+                                                            value={asset.assetId}
+                                                            onChange={(e) => handleAssetChange(asset.id, 'assetId', e.target.value)}
+                                                            style={{ backgroundColor: '#FFFFFF', border: '1px solid #9E9E9E', borderRadius: '4px', padding: '14px 12px', fontFamily: 'Barlow, sans-serif', fontSize: '16px', color: '#212121', lineHeight: 1.4, outline: 'none' }}
+                                                        />
+                                                    </div>
+
+                                                    {index > 0 && (
+                                                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                            <button
+                                                                onClick={() => removeAsset(asset.id)}
+                                                                style={{ backgroundColor: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 0', fontFamily: 'Poppins, sans-serif', fontSize: '12px', fontWeight: 600, color: '#D40047', lineHeight: 1.4 }}
+                                                            >
+                                                                REMOVE
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+
+                                            {assets.length < 3 && (
+                                                <button onClick={addAsset} style={{ backgroundColor: 'transparent', border: 'none', height: '36px', padding: '0 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', borderRadius: '4px' }}>
+                                                    <svg style={{ width: '16px', height: '16px', fill: '#3C3C3C' }} viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" /></svg>
+                                                    <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: '12px', fontWeight: 600, color: '#3C3C3C', letterSpacing: '0.5px', lineHeight: 1 }}>ANOTHER ASSET</span>
+                                                </button>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* Check-in Details */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '16px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.25 }}>Check-in Details</div>
+                                </div>
+
+                                <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EBEBEB', borderRadius: '4px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        <label style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4 }}>
+                                            Carrier Company<span style={{ color: '#D40047' }}>*</span>
+                                        </label>
+                                        <div className="custom-dropdown" style={{ position: 'relative' }}>
+                                            <div style={{ position: 'relative' }}>
+                                                <input
+                                                    type="text"
+                                                    value={carrierSearchTerm || formData.carrierCompany || ''}
+                                                    onChange={(e) => handleCarrierInputChange(e.target.value)}
+                                                    onFocus={handleCarrierInputFocus}
+                                                    placeholder="Search or select carrier company"
+                                                    style={{ backgroundColor: '#FFFFFF', border: openDropdown === 'carrierCompany' ? '2px solid #FF9A1A' : '1px solid #9E9E9E', borderRadius: '4px', padding: '14px 80px 14px 12px', fontFamily: 'Barlow, sans-serif', fontSize: '16px', color: '#212121', lineHeight: 1.4, outline: 'none', cursor: 'text', width: '100%', transition: 'border-color 0.1s ease, border-width 0.1s ease' }}
+                                                />
+                                                <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    {(carrierSearchTerm || formData.carrierCompany) && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                handleInputChange('carrierCompany', '');
+                                                                setCarrierSearchTerm('');
+                                                                setOpenDropdown(null);
+                                                            }}
+                                                            className="clear-button"
+                                                            style={{ backgroundColor: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                        >
+                                                            <svg style={{ width: '20px', height: '20px', fill: '#656565' }} viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" /></svg>
+                                                        </button>
+                                                    )}
+                                                    <div style={{ pointerEvents: 'none' }}>
+                                                        <svg style={{ width: '20px', height: '20px', fill: '#3C3C3C', transform: openDropdown === 'carrierCompany' ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.1s ease' }} viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" /></svg>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {openDropdown === 'carrierCompany' && (
+                                                <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, backgroundColor: '#FFFFFF', border: '1px solid #EBEBEB', borderRadius: '4px', boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', zIndex: 1000, overflow: 'hidden', maxHeight: '280px', display: 'flex', flexDirection: 'column' }}>
+                                                    {filteredCarrierCompanies.length > 0 && (
+                                                        <div className="dropdown-scroll" style={{ overflowY: 'auto', padding: '8px 0', flex: 1 }}>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                                {filteredCarrierCompanies.map((company) => (
+                                                                    <button
+                                                                        key={company}
+                                                                        type="button"
+                                                                        onClick={() => selectDropdownItem('carrierCompany', company)}
+                                                                        className="dropdown-list-item"
+                                                                        style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}
+                                                                    >
+                                                                        {company}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {(carrierSearchTerm || formData.carrierCompany) && (
+                                                        <div style={{ borderTop: filteredCarrierCompanies.length > 0 ? '1px solid #EBEBEB' : 'none', padding: filteredCarrierCompanies.length > 0 ? '8px 0 0 0' : '0' }}>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => selectDropdownItem('carrierCompany', carrierSearchTerm || formData.carrierCompany)}
+                                                                className="dropdown-list-item"
+                                                                style={{ width: '100%', padding: '16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer' }}
+                                                            >
+                                                                <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', color: '#212121', lineHeight: 1.4 }}>
+                                                                    Select <span style={{ fontWeight: 600 }}>"{carrierSearchTerm || formData.carrierCompany}"</span> as carrier
+                                                                </div>
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        <label style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4 }}>
+                                            Driver's Phone Number<span style={{ color: '#D40047' }}>*</span>
+                                        </label>
+                                        <input
+                                            type="tel"
+                                            value={formData.phoneNumber}
+                                            onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                                            style={{ backgroundColor: '#FFFFFF', border: '1px solid #9E9E9E', borderRadius: '4px', padding: '14px 12px', fontFamily: 'Barlow, sans-serif', fontSize: '16px', color: '#212121', lineHeight: 1.4, outline: 'none' }}
+                                        />
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        <label style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4 }}>Check-in Custom Field</label>
+                                        <input
+                                            type="text"
+                                            value={formData.customField}
+                                            onChange={(e) => handleInputChange('customField', e.target.value)}
+                                            style={{ backgroundColor: '#FFFFFF', border: '1px solid #9E9E9E', borderRadius: '4px', padding: '14px 12px', fontFamily: 'Barlow, sans-serif', fontSize: '16px', color: '#212121', lineHeight: 1.4, outline: 'none' }}
+                                        />
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        <label style={{ fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 600, color: '#3C3C3C', lineHeight: 1.4 }}>Notes</label>
+                                        <textarea
+                                            placeholder="Any special instructions or notes to the facility?"
+                                            value={formData.notes}
+                                            onChange={(e) => handleInputChange('notes', e.target.value)}
+                                            style={{ backgroundColor: '#FFFFFF', border: '1px solid #9E9E9E', borderRadius: '4px', padding: '12px', fontFamily: 'Barlow, sans-serif', fontSize: '16px', color: '#212121', lineHeight: 1.4, outline: 'none', minHeight: '120px', resize: 'none' }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Spacer for button */}
+                                <div style={{ height: '80px' }}></div>
+                            </div>
+
+                            {/* Sticky Button using CSS sticky */}
+                            <div className="sticky-button" style={{ backgroundColor: '#FFFFFF', borderTop: '1px solid #EBEBEB', padding: '24px' }}>
+                                <button 
+                                    onClick={handleCompleteCheckIn}
+                                    disabled={!isFormValid()}
+                                    style={{ 
+                                        backgroundColor: isFormValid() ? '#FF9A1A' : '#DBDBDB', 
+                                        border: 'none', 
+                                        borderRadius: '4px', 
+                                        height: '44px', 
+                                        padding: '0 16px', 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center', 
+                                        gap: '8px', 
+                                        cursor: isFormValid() ? 'pointer' : 'not-allowed', 
+                                        width: '100%', 
+                                        boxShadow: '0px 1px 4px 0px rgba(30, 48, 54, 0.24)',
+                                        opacity: isFormValid() ? 1 : 0.6,
+                                        transition: 'background-color 0.1s ease, opacity 0.1s ease'
+                                    }}
+                                >
+                                    <svg style={{ width: '16px', height: '16px', fill: '#212121' }} viewBox="0 0 24 24"><path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z" /></svg>
+                                    <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: '14px', fontWeight: 600, color: '#212121', letterSpacing: '0.5px', lineHeight: 1 }}>COMPLETE CHECK-IN</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {currentScreen === 'success' && (
+                        <div style={{ backgroundColor: '#0E4059', minHeight: '100vh', width: '100%', maxWidth: '600px', margin: '0 auto', padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', transform: isAnimating ? 'translateY(5px)' : 'translateY(0)', opacity: isAnimating ? 0 : 1, transition: 'transform 0.4s ease, opacity 0.4s ease' }}>
+                            {/* Header */}
+                            <div style={{ paddingBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '20px', fontWeight: 600, color: '#FFFFFF' }}>Opendock</div>
+                                <div className="language-selector" style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
+                                    <button onClick={toggleLanguageDropdown} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}>
+                                        <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: '16px', fontWeight: 600, color: '#FFFFFF', lineHeight: 1.25 }}>{selectedLanguage}</span>
+                                        <svg style={{ width: '16px', height: '16px', fill: '#FFFFFF', transform: languageDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.1s ease' }} viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" /></svg>
+                                    </button>
+                                    {languageDropdownOpen && (
+                                        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, backgroundColor: '#FFFFFF', border: '1px solid #EBEBEB', borderRadius: '4px', boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', zIndex: 1000, overflow: 'hidden', minWidth: '120px' }}>
+                                            <button onClick={() => selectLanguage('ENGLISH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>English</button>
+                                            <button onClick={() => selectLanguage('SPANISH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>Spanish</button>
+                                            <button onClick={() => selectLanguage('FRENCH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>French</button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Main content */}
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px', paddingTop: '36px' }}>
+                                {/* Success confirmation */}
+                                <div style={{ backgroundColor: 'transparent', border: '2px solid #12A455', borderRadius: '4px', padding: '16px', display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                    <svg style={{ width: '44px', height: '44px', fill: '#12A455', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z" /></svg>
+                                    <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '20px', fontWeight: 600, color: '#F8FBFC', lineHeight: 1.25 }}>You're checked in</div>
+                                </div>
+
+                                {/* Post Check-in Instructions */}
+                                <div style={{ backgroundColor: 'rgba(188, 206, 212, 0.2)', borderRadius: '4px', overflow: 'hidden' }}>
+                                    <button 
+                                        onClick={() => setInstructionsExpanded(!instructionsExpanded)}
+                                        style={{ width: '100%', backgroundColor: 'transparent', border: 'none', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+                                    >
+                                        <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '14px', fontWeight: 600, color: '#FFFFFF', lineHeight: 1.25 }}>Post Check-in Instructions</div>
+                                        <svg style={{ width: '20px', height: '20px', fill: '#FFFFFF', transform: instructionsExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.1s ease' }} viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" /></svg>
+                                    </button>
+                                    
+                                    <div style={{ maxHeight: instructionsExpanded ? '500px' : '0', overflow: 'hidden', transition: 'max-height 0.3s ease, opacity 0.3s ease', opacity: instructionsExpanded ? 1 : 0 }}>
+                                        <div style={{ padding: '0 16px 16px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 400, color: '#FCFCFF', lineHeight: 1.4 }}>
+                                                <p style={{ marginBottom: '8px' }}>Please follow these instructions:</p>
+                                                <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                                                    <li style={{ marginBottom: '8px' }}>Proceed to Dock Door #12 on the north side of the facility</li>
+                                                    <li style={{ marginBottom: '8px' }}>Wait for the green light signal before backing into the dock</li>
+                                                    <li style={{ marginBottom: '8px' }}>Turn off your engine once positioned at the dock</li>
+                                                    <li style={{ marginBottom: '8px' }}>Do not leave your vehicle until warehouse personnel contact you</li>
+                                                    <li style={{ marginBottom: '8px' }}>Estimated processing time: 45-60 minutes</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Help text */}
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 400, color: '#FCFCFF', lineHeight: 1.4 }}>
+                                        If you need any help or additional information, please contact the warehouse staff.
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Finalize button */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                <button onClick={handleFinalize} style={{ backgroundColor: '#FF9A1A', border: 'none', borderRadius: '4px', height: '44px', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', width: '100%', boxShadow: '0px 1px 4px 0px rgba(30, 48, 54, 0.24)' }}>
+                                    <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: '14px', fontWeight: 600, color: '#212121', letterSpacing: '0.5px', lineHeight: 1 }}>({countdown}) FINALIZE</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
-              </div>
+            );
+        }
 
-              <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '412px', backgroundColor: '#FFFFFF', borderTop: '1px solid #EBEBEB', padding: '24px', boxSizing: 'border-box' }}>
-                <button 
-                  onClick={handleCompleteCheckIn}
-                  disabled={!isFormValid()}
-                  style={{ 
-                    backgroundColor: isFormValid() ? '#FF9A1A' : '#DBDBDB', 
-                    border: 'none', 
-                    borderRadius: '4px', 
-                    height: '44px', 
-                    padding: '0 16px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    gap: '8px', 
-                    cursor: isFormValid() ? 'pointer' : 'not-allowed', 
-                    width: '100%', 
-                    boxShadow: '0px 1px 4px 0px rgba(30, 48, 54, 0.24)',
-                    opacity: isFormValid() ? 1 : 0.6,
-                    transition: 'background-color 0.1s ease, opacity 0.1s ease'
-                  }}
-                >
-                  <svg style={{ width: '16px', height: '16px', fill: '#212121' }} viewBox="0 0 24 24"><path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z" /></svg>
-                  <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: '14px', fontWeight: 600, color: '#212121', letterSpacing: '0.5px', lineHeight: 1 }}>COMPLETE CHECK-IN</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {currentScreen === 'success' && (
-            <div key="success" style={{ backgroundColor: '#0E4059', minHeight: '100vh', width: '100%', maxWidth: '412px', margin: '0 auto', padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', transform: isAnimating ? 'translateY(5px)' : 'translateY(0)', opacity: isAnimating ? 0 : 1, transition: 'transform 0.4s ease, opacity 0.4s ease' }}>
-              <div style={{ paddingBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '20px', fontWeight: 600, color: '#FFFFFF' }}>Opendock</div>
-                <div className="language-selector" style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
-                  <button onClick={toggleLanguageDropdown} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}>
-                    <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: '16px', fontWeight: 600, color: '#FFFFFF', lineHeight: 1.25 }}>{selectedLanguage}</span>
-                    <svg style={{ width: '16px', height: '16px', fill: '#FFFFFF', transform: languageDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.1s ease' }} viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" /></svg>
-                  </button>
-                  {languageDropdownOpen && (
-                    <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, backgroundColor: '#FFFFFF', border: '1px solid #EBEBEB', borderRadius: '4px', boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', zIndex: 1000, overflow: 'hidden', minWidth: '120px' }}>
-                      <button onClick={() => selectLanguage('ENGLISH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>English</button>
-                      <button onClick={() => selectLanguage('SPANISH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>Spanish</button>
-                      <button onClick={() => selectLanguage('FRENCH')} className="dropdown-list-item" style={{ width: '100%', padding: '12px 16px', backgroundColor: 'transparent', border: 'none', textAlign: 'left', fontFamily: 'Barlow, sans-serif', fontSize: '14px', fontWeight: 400, color: '#212121', cursor: 'pointer', display: 'block', lineHeight: 1.4 }}>French</button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px', paddingTop: '36px' }}>
-                <div style={{ backgroundColor: 'transparent', border: '2px solid #12A455', borderRadius: '4px', padding: '16px', display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <svg style={{ width: '44px', height: '44px', fill: '#12A455', flexShrink: 0 }} viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z" /></svg>
-                  <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '20px', fontWeight: 600, color: '#F8FBFC', lineHeight: 1.25 }}>You're checked in</div>
-                </div>
-
-                <div style={{ backgroundColor: 'rgba(188, 206, 212, 0.2)', borderRadius: '4px', overflow: 'hidden' }}>
-                  <button 
-                    onClick={() => setInstructionsExpanded(!instructionsExpanded)}
-                    style={{ width: '100%', backgroundColor: 'transparent', border: 'none', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
-                  >
-                    <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: '14px', fontWeight: 600, color: '#FFFFFF', lineHeight: 1.25 }}>Post Check-in Instructions</div>
-                    <svg style={{ width: '20px', height: '20px', fill: '#FFFFFF', transform: instructionsExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.1s ease' }} viewBox="0 0 24 24"><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" /></svg>
-                  </button>
-                  
-                  <div style={{ maxHeight: instructionsExpanded ? '500px' : '0', overflow: 'hidden', transition: 'max-height 0.3s ease, opacity 0.3s ease', opacity: instructionsExpanded ? 1 : 0 }}>
-                    <div style={{ padding: '0 16px 16px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 400, color: '#FCFCFF', lineHeight: 1.4 }}>
-                        <p style={{ marginBottom: '8px' }}>Please follow these instructions:</p>
-                        <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                          <li style={{ marginBottom: '8px' }}>Proceed to Dock Door #12 on the north side of the facility</li>
-                          <li style={{ marginBottom: '8px' }}>Wait for the green light signal before backing into the dock</li>
-                          <li style={{ marginBottom: '8px' }}>Turn off your engine once positioned at the dock</li>
-                          <li style={{ marginBottom: '8px' }}>Do not leave your vehicle until warehouse personnel contact you</li>
-                          <li style={{ marginBottom: '8px' }}>Estimated processing time: 45-60 minutes</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: '16px', fontWeight: 400, color: '#FCFCFF', lineHeight: 1.4 }}>
-                    If you need any help or additional information, please contact the warehouse staff.
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <button onClick={handleFinalize} style={{ backgroundColor: '#FF9A1A', border: 'none', borderRadius: '4px', height: '44px', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', width: '100%', boxShadow: '0px 1px 4px 0px rgba(30, 48, 54, 0.24)' }}>
-                  <span style={{ fontFamily: 'Poppins, sans-serif', fontSize: '14px', fontWeight: 600, color: '#212121', letterSpacing: '0.5px', lineHeight: 1 }}>({countdown}) FINALIZE</span>
-                </button>
-              </div>
-            </div>
-          )}
-        </>
-      );
-    }
-
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<CheckInApp />);
-  </script>
+        // Render the app
+        ReactDOM.render(<CheckInApp />, document.getElementById('root'));
+    </script>
 </body>
 </html>
